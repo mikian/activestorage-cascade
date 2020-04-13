@@ -45,6 +45,18 @@ module ActiveStorage
           .url(key, expires_in: expires_in, disposition: disposition, filename: filename, content_type: content_type)
       end
 
+      def method_missing(method_name, *arguments, &block)
+        if primary.respond_to?(method_name)
+          primary.send(method_name, *arguments, &block)
+        else
+          super
+        end
+      end
+
+      def respond_to?(method_name, include_private = false)
+        primary.respond_to?(method_name, include_private) || super
+      end
+
       private
 
       def service(key)
