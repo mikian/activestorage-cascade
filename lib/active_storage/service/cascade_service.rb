@@ -5,21 +5,21 @@ require 'active_support/core_ext/module/delegation'
 module ActiveStorage
   class Service
     class CascadeService < Service
-      attr_reader :primary, :secondary
+      attr_reader :primary, :secondaries
 
       delegate :upload, :update_metadata, :delete, :delete_prefixed, :url_for_direct_upload, :headers_for_direct_upload,
                to: :primary
 
-      def self.build(primary:, secondary:, configurator:, **_options) #:nodoc:
+      def self.build(primary:, secondaries:, configurator:, **_options) #:nodoc:
         new(
           primary: configurator.build(primary),
-          secondary: configurator.build(secondary)
+          secondaries: configurator.build(secondaries)
         )
       end
 
-      def initialize(primary:, secondary:)
+      def initialize(primary:, secondaries:)
         @primary = primary
-        @secondary = secondary
+        @secondaries = secondaries
       end
 
       # Return the content of the file at the +key+.
@@ -34,7 +34,7 @@ module ActiveStorage
 
       # Return +true+ if a file exists at the +key+.
       def exist?(key)
-        primary.exist?(key) || secondary.exist?(key)
+        [primary, *secondaries].any? { |svc| svc.exist?(key) }
       end
 
       # Returns a signed, temporary URL for the file at the +key+. The URL will be valid for the amount
@@ -60,7 +60,7 @@ module ActiveStorage
       private
 
       def service(key)
-        primary.exist?(key) ? primary : secondary
+        [primary, *secondaries].find { |svc| svc.exist?(key) }
       end
     end
   end
